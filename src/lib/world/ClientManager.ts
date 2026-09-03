@@ -4,6 +4,7 @@ class ClientManager {
     private lastFocusedClient: KwinClient|null;
     private lastFocusedTiledWindow: Window|null;
     private focusLeftTiling: boolean;
+    private pendingCursorWindow: Window|null;
     private readonly windowRuleEnforcer: WindowRuleEnforcer;
 
     constructor(
@@ -20,6 +21,7 @@ class ClientManager {
         this.lastFocusedClient = null;
         this.lastFocusedTiledWindow = null;
         this.focusLeftTiling = false;
+        this.pendingCursorWindow = null;
 
         let parsedWindowRules: WindowRule[] = [];
         try {
@@ -63,6 +65,7 @@ class ClientManager {
             if (window !== null) {
                 this.focusLeftTiling = false;
                 this.lastFocusedTiledWindow = window;
+                this.pendingCursorWindow = window;
             }
         }
     }
@@ -192,6 +195,14 @@ class ClientManager {
 
     public onFocusLeftTiling() {
         this.focusLeftTiling = true;
+    }
+
+    public flushCursorMove() {
+        const window = this.pendingCursorWindow;
+        this.pendingCursorWindow = null;
+        if (window !== null && this.config.cursorFollowsFocus) {
+            this.moveCursorToWindow(window);
+        }
     }
 
     public onClientFocused(kwinClient: KwinClient) {

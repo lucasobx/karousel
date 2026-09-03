@@ -109,6 +109,7 @@ class World {
     public do(f: (clientManager: ClientManager, desktopManager: DesktopManager) => void) {
         f(this.clientManager, this.desktopManager);
         this.update();
+        this.clientManager.flushCursorMove();
     }
 
     public doIfTiled(
