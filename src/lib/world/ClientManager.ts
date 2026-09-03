@@ -2,6 +2,8 @@ class ClientManager {
     private readonly config: ClientManager.Config;
     private readonly clientMap: Map<KwinClient, ClientWrapper>;
     private lastFocusedClient: KwinClient|null;
+    private lastFocusedTiledWindow: Window|null;
+    private focusLeftTiling: boolean;
     private readonly windowRuleEnforcer: WindowRuleEnforcer;
 
     constructor(
@@ -16,6 +18,8 @@ class ClientManager {
         this.pinManager = pinManager;
         this.clientMap = new Map();
         this.lastFocusedClient = null;
+        this.lastFocusedTiledWindow = null;
+        this.focusLeftTiling = false;
 
         let parsedWindowRules: WindowRule[] = [];
         try {
@@ -53,6 +57,14 @@ class ClientManager {
             this.windowRuleEnforcer.initClientSignalManager(this.world, kwinClient),
         );
         this.clientMap.set(kwinClient, client);
+
+        if (kwinClient === this.lastFocusedClient) {
+            const window = this.findTiledWindowOfClient(client);
+            if (window !== null) {
+                this.focusLeftTiling = false;
+                this.lastFocusedTiledWindow = window;
+            }
+        }
     }
 
     public removeClient(kwinClient: KwinClient, passFocus: FocusPassing.Type) {
@@ -178,15 +190,24 @@ class ClientManager {
         return this.clientMap.has(kwinClient);
     }
 
+    public onFocusLeftTiling() {
+        this.focusLeftTiling = true;
+    }
+
     public onClientFocused(kwinClient: KwinClient) {
         this.lastFocusedClient = kwinClient;
         const window = this.findTiledWindow(kwinClient);
         if (window === null) {
+            this.focusLeftTiling = true;
             return;
         }
 
+        const returningFromOutside = this.focusLeftTiling && this.lastFocusedTiledWindow === window;
+        this.focusLeftTiling = false;
+        this.lastFocusedTiledWindow = window;
+
         window.onFocused();
-        if (this.config.cursorFollowsFocus) {
+        if (this.config.cursorFollowsFocus && !returningFromOutside) {
             this.moveCursorToWindow(window);
         }
     }
