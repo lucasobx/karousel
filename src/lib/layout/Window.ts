@@ -4,9 +4,12 @@ class Window {
     public height: number;
     public readonly focusedState: Window.State;
     private skipArrange: boolean;
+    private readonly tiledAt: number;
+    private static readonly settleGracePeriodMs = 1000;
 
     constructor(client: ClientWrapper, column: Column) {
         this.client = client;
+        this.tiledAt = Date.now();
         this.height = client.kwinClient.frameGeometry.height.round();
 
         let maximizedMode = this.client.getMaximizedMode();
@@ -126,6 +129,14 @@ class Window {
     }
 
     public onFrameGeometryChanged() {
+        if (
+            this.column.grid.config.snapNewColumnsToPresets &&
+            Date.now() - this.tiledAt < Window.settleGracePeriodMs
+        ) {
+            this.column.resizeWindows();
+            return;
+        }
+
         const newGeometry = this.client.kwinClient.frameGeometry;
         this.column.setWidth(newGeometry.width.round(), true);
         this.column.grid.desktop.onLayoutChanged();

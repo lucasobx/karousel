@@ -1,5 +1,15 @@
-class PresetWidths {
+interface PresetWidthsProvider {
+    next(currentWidth: number, minWidth: number, maxWidth: number, tilingAreaWidth: number): number;
+    prev(currentWidth: number, minWidth: number, maxWidth: number, tilingAreaWidth: number): number;
+    getWidths(minWidth: number, maxWidth: number, tilingAreaWidth: number): number[];
+    closest(width: number, minWidth: number, maxWidth: number, tilingAreaWidth: number): number;
+    closestIndex(width: number, minWidth: number, maxWidth: number, tilingAreaWidth: number): number;
+}
+
+class PresetWidths implements PresetWidthsProvider {
     private readonly presets: ((tilingAreaWidth: number) => number)[];
+
+    public static readonly tolerance = 1;
 
     constructor(presetWidths: string, spacing: number) {
         this.presets = PresetWidths.parsePresetWidths(presetWidths, spacing);
@@ -7,14 +17,37 @@ class PresetWidths {
 
     public next(currentWidth: number, minWidth: number, maxWidth: number, tilingAreaWidth: number) {
         const widths = this.getWidths(minWidth, maxWidth, tilingAreaWidth);
-        const nextIndex = widths.findIndex(width => width > currentWidth);
+        const nextIndex = widths.findIndex(width => currentWidth + PresetWidths.tolerance < width);
         return nextIndex >= 0 ? widths[nextIndex] : widths[0];
     }
 
     public prev(currentWidth: number, minWidth: number, maxWidth: number, tilingAreaWidth: number) {
         const widths = this.getWidths(minWidth, maxWidth, tilingAreaWidth).reverse();
-        const nextIndex = widths.findIndex(width => width < currentWidth);
+        const nextIndex = widths.findIndex(width => width + PresetWidths.tolerance < currentWidth);
         return nextIndex >= 0 ? widths[nextIndex] : widths[0];
+    }
+
+    public closestIndex(width: number, minWidth: number, maxWidth: number, tilingAreaWidth: number) {
+        const widths = this.getWidths(minWidth, maxWidth, tilingAreaWidth);
+        if (widths.length === 0) {
+            return -1;
+        }
+        let bestIndex = 0;
+        let bestError = Infinity;
+        for (let i = 0; i < widths.length; i++) {
+            const error = Math.abs(widths[i] - width);
+            if (error < bestError) {
+                bestError = error;
+                bestIndex = i;
+            }
+        }
+        return bestIndex;
+    }
+
+    public closest(width: number, minWidth: number, maxWidth: number, tilingAreaWidth: number) {
+        const widths = this.getWidths(minWidth, maxWidth, tilingAreaWidth);
+        const index = this.closestIndex(width, minWidth, maxWidth, tilingAreaWidth);
+        return index >= 0 ? widths[index] : width;
     }
 
     public getWidths(minWidth: number, maxWidth: number, tilingAreaWidth: number) {

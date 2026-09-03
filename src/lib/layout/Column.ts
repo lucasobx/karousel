@@ -5,6 +5,7 @@ class Column {
     private readonly windows: LinkedList<Window>;
     private stacked: boolean;
     private focusTaker: Window|null;
+    private presetWidthIdx: number|null;
     private static readonly minWidth = 40;
 
     constructor(grid: Grid, leftColumn: Column|null) {
@@ -13,6 +14,7 @@ class Column {
         this.windows = new LinkedList();
         this.stacked = grid.config.stackColumnsByDefault;
         this.focusTaker = null;
+        this.presetWidthIdx = null;
         this.grid = grid;
         this.grid.onColumnAdded(this, leftColumn);
     }
@@ -105,6 +107,7 @@ class Column {
         }
 
         this.width = width;
+        this.presetWidthIdx = null; // cyclePresetWidth() re-sets this afterwards
         if (setPreferred) {
             for (const window of this.windows.iterator()) {
                 window.client.preferredWidth = width;
@@ -117,7 +120,47 @@ class Column {
         this.setWidth(this.width + widthDelta, setPreferred);
     }
 
+    public cyclePresetWidth(forwards: boolean) {
+        const presetWidths = this.grid.config.presetWidths;
+        const minWidth = this.getMinWidth();
+        const maxWidth = this.getMaxWidth();
+        const tilingAreaWidth = this.grid.desktop.tilingArea.width;
+        const widths = presetWidths.getWidths(minWidth, maxWidth, tilingAreaWidth);
+        if (widths.length === 0) {
+            return;
+        }
+
+        let index: number;
+        if (this.presetWidthIdx !== null && this.presetWidthIdx < widths.length) {
+            const step = forwards ? 1 : widths.length - 1;
+            index = (this.presetWidthIdx + step) % widths.length;
+        } else {
+            const width = forwards
+                ? presetWidths.next(this.width, minWidth, maxWidth, tilingAreaWidth)
+                : presetWidths.prev(this.width, minWidth, maxWidth, tilingAreaWidth);
+            index = widths.indexOf(width);
+            if (index < 0) {
+                index = 0;
+            }
+        }
+
+        this.setWidthPreset(widths[index], index);
+    }
+
+    private setWidthPreset(width: number, index: number) {
+        this.setWidth(width, true);
+        this.presetWidthIdx = index;
+    }
+
     public updateWidth() {
+        if (this.presetWidthIdx !== null) {
+            const widths = this.grid.config.presetWidths.getWidths(this.getMinWidth(), this.getMaxWidth(), this.grid.desktop.tilingArea.width);
+            if (this.presetWidthIdx < widths.length) {
+                this.setWidthPreset(widths[this.presetWidthIdx], this.presetWidthIdx);
+                return;
+            }
+        }
+
         let minErr = Infinity;
         let closestPreferredWidth = this.width;
         for (const window of this.windows.iterator()) {
@@ -280,7 +323,19 @@ class Column {
         }
 
         if (this.width === 0) {
-            this.setWidth(window.client.preferredWidth, false);
+            const presetWidths = this.grid.config.presetWidths;
+            const minWidth = this.getMinWidth();
+            const maxWidth = this.getMaxWidth();
+            const tilingAreaWidth = this.grid.desktop.tilingArea.width;
+            const index = this.grid.config.snapNewColumnsToPresets
+                ? presetWidths.closestIndex(window.client.preferredWidth, minWidth, maxWidth, tilingAreaWidth)
+                : -1;
+            if (index < 0) {
+                this.setWidth(window.client.preferredWidth, false);
+            } else {
+                const widths = presetWidths.getWidths(minWidth, maxWidth, tilingAreaWidth);
+                this.setWidthPreset(widths[index], index);
+            }
         } else {
             this.setWidth(this.width, false); // re-apply width constraints of the new window
         }

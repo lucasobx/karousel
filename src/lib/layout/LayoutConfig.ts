@@ -1,4 +1,5 @@
 interface LayoutConfig {
+    presetWidths: PresetWidthsProvider;
     gapsInnerHorizontal: number;
     gapsInnerVertical: number;
     stackOffsetX: number;
@@ -7,6 +8,7 @@ interface LayoutConfig {
     stackColumnsByDefault: boolean;
     resizeNeighborColumn: boolean;
     reMaximize: boolean;
+    snapNewColumnsToPresets: boolean;
     skipSwitcher: boolean;
     tiledKeepBelow: boolean;
     maximizedKeepAbove: boolean;

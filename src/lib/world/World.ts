@@ -14,6 +14,8 @@ class World {
             next: (currentWidth: number, minWidth: number, maxWidth: number, tilingAreaWidth: number) => currentWidth,
             prev: (currentWidth: number, minWidth: number, maxWidth: number, tilingAreaWidth: number) => currentWidth,
             getWidths: (minWidth: number, maxWidth: number, tilingAreaWidth: number): number[] => [],
+            closest: (width: number, minWidth: number, maxWidth: number, tilingAreaWidth: number) => width,
+            closestIndex: (width: number, minWidth: number, maxWidth: number, tilingAreaWidth: number) => -1,
         };
         try {
             presetWidths = new PresetWidths(config.presetWidths, config.gapsInnerHorizontal);
@@ -40,6 +42,7 @@ class World {
         this.pinManager = new PinManager();
 
         const layoutConfig = {
+            presetWidths: presetWidths,
             gapsInnerHorizontal: config.gapsInnerHorizontal,
             gapsInnerVertical: config.gapsInnerVertical,
             stackOffsetX: config.stackOffsetX,
@@ -48,6 +51,7 @@ class World {
             stackColumnsByDefault: config.stackColumnsByDefault,
             resizeNeighborColumn: config.resizeNeighborColumn,
             reMaximize: config.reMaximize,
+            snapNewColumnsToPresets: config.snapNewColumnsToPresets,
             skipSwitcher: config.skipSwitcher,
             tiledKeepBelow: config.tiledKeepBelow,
             maximizedKeepAbove: config.floatingKeepAbove,

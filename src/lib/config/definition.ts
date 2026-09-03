@@ -145,6 +145,11 @@ const configDef = [
         default: false,
     },
     {
+        name: "snapNewColumnsToPresets",
+        type: "Bool",
+        default: false,
+    },
+    {
         name: "skipSwitcher",
         type: "Bool",
         default: false,

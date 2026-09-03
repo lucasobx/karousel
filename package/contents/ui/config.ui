@@ -70,6 +70,16 @@
                                             </widget>
                                         </item>
                                         <item>
+                                            <widget class="QCheckBox" name="kcfg_snapNewColumnsToPresets">
+                                                <property name="text">
+                                                    <string>Snap new columns to presets</string>
+                                                </property>
+                                                <property name="toolTip">
+                                                    <string>Size newly opened columns to the nearest preset width instead of the size the application asks for</string>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                        <item>
                                             <widget class="QCheckBox" name="kcfg_skipSwitcher">
                                                 <property name="text">
                                                     <string>Tiled windows skip switcher</string>
