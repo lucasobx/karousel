@@ -1,12 +1,17 @@
 class Desktop {
     public readonly grid: Grid;
     private scrollX: number;
-    private gestureScrollXInitial: number | null;
+    private gestureScrollState: Desktop.GestureScroll | null;
+    private scrollAnimation: Desktop.ScrollAnimation | null;
     private dirty: boolean;
     private dirtyScroll: boolean;
     private dirtyPins: boolean;
     public clientArea: QmlRect;
     public tilingArea: QmlRect;
+    private static readonly gestureScrollVelocityWindowMs = 150;
+    private static readonly gestureScrollProjectionS = -1 / (1000 * Math.log(0.997));
+    private static readonly scrollAnimationOmega = Math.sqrt(800);
+    private static readonly scrollAnimationMaxS = 1;
 
     constructor(
         public readonly kwinDesktop: KwinDesktop,
@@ -17,7 +22,8 @@ class Desktop {
         focusPasser: FocusPassing.Passer,
     ) {
         this.scrollX = 0;
-        this.gestureScrollXInitial = null;
+        this.gestureScrollState = null;
+        this.scrollAnimation = null;
         this.dirty = true;
         this.dirtyScroll = true;
         this.dirtyPins = true;
@@ -115,6 +121,11 @@ class Desktop {
     }
 
     public setScroll(x: number, force: boolean) {
+        this.scrollAnimation = null;
+        this.applyScroll(x, force);
+    }
+
+    private applyScroll(x: number, force: boolean) {
         const oldScrollX = this.scrollX;
         this.scrollX = force ? x : this.clampScrollX(x);
         if (this.scrollX !== oldScrollX) {
@@ -129,22 +140,116 @@ class Desktop {
 
     public gestureScroll(amount: number) {
         if (!this.config.gestureScroll) {
-            return;
+            return false;
         }
-        if (this.gestureScrollXInitial === null) {
-            this.gestureScrollXInitial = this.scrollX;
+        if (this.gestureScrollState === null) {
+            this.gestureScrollState = { startX: this.scrollX, baseX: this.scrollX, samples: [], saturated: false };
         }
+        const gesture = this.gestureScrollState;
 
         if (this.config.gestureScrollInvert) {
             amount = -amount;
         }
-        this.setScroll(this.gestureScrollXInitial + this.config.gestureScrollStep * amount, false);
+        if (gesture.saturated) {
+            gesture.baseX = this.scrollX - this.config.gestureScrollStep * amount;
+            gesture.samples = [];
+            gesture.saturated = false;
+        }
+
+        const x = gesture.baseX + this.config.gestureScrollStep * amount;
+        gesture.samples.push({ time: Date.now(), x: x });
+        this.setScroll(x, false);
+
+        if (Math.abs(amount) >= 1) {
+            gesture.saturated = true;
+            this.startGestureScrollAnimation(gesture);
+            return true;
+        }
+        return false;
     }
 
-    public gestureScrollFinish(focusedWindow: Window|null) {
-        const scrolledRight = this.scrollX > this.gestureScrollXInitial!;
-        this.gestureScrollXInitial = null;
+    public gestureScrollFinish() {
+        const gesture = this.gestureScrollState;
+        this.gestureScrollState = null;
+        if (gesture === null || gesture.saturated) {
+            return false;
+        }
 
+        this.startGestureScrollAnimation(gesture);
+        return true;
+    }
+
+    private startGestureScrollAnimation(gesture: Desktop.GestureScroll) {
+        const velocity = Desktop.getGestureScrollVelocity(gesture.samples);
+        const target = this.getGestureScrollSnapTarget(this.scrollX + velocity * Desktop.gestureScrollProjectionS);
+        this.scrollAnimation = {
+            from: this.scrollX,
+            to: target,
+            velocity: velocity,
+            elapsedMs: 0,
+            scrolledRight: target > gesture.startX,
+        };
+    }
+
+    private static getGestureScrollVelocity(samples: Desktop.GestureScrollSample[]) {
+        const now = Date.now();
+        const recentSamples = samples.filter(sample => now - sample.time <= Desktop.gestureScrollVelocityWindowMs);
+        if (recentSamples.length === 0) {
+            return 0;
+        }
+        const duration = now - recentSamples[0].time;
+        if (duration === 0) {
+            return 0;
+        }
+        return (recentSamples[recentSamples.length - 1].x - recentSamples[0].x) * 1000 / duration;
+    }
+
+    private getGestureScrollSnapTarget(projectedX: number) {
+        const width = this.tilingArea.width;
+        let target = this.clampScrollX(projectedX);
+        let minDistance = Infinity;
+        for (let column = this.grid.getFirstColumn(); column !== null; column = this.grid.getRightColumn(column)) {
+            const snapPoints = this.config.gestureScrollSnapCenter
+                ? [Math.round(column.getLeft() + (column.getWidth() - width) / 2)]
+                : [column.getLeft(), column.getRight() - width];
+            for (const snapPoint of snapPoints) {
+                const x = this.clampScrollX(snapPoint);
+                const distance = Math.abs(x - projectedX);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    target = x;
+                }
+            }
+        }
+        return target;
+    }
+
+    public stepScrollAnimation(elapsedMs: number, focusedWindow: Window|null) {
+        const animation = this.scrollAnimation;
+        if (animation === null) {
+            return false;
+        }
+
+        animation.elapsedMs += elapsedMs;
+        const t = animation.elapsedMs / 1000;
+        const omega = Desktop.scrollAnimationOmega;
+        const offset = animation.from - animation.to;
+        const a = animation.velocity + omega * offset;
+        const decay = Math.exp(-omega * t);
+        const x = animation.to + (offset + a * t) * decay;
+        const velocity = (animation.velocity - omega * a * t) * decay;
+        if ((Math.abs(x - animation.to) < 0.5 && Math.abs(velocity) < 50) || t >= Desktop.scrollAnimationMaxS) {
+            this.applyScroll(animation.to, false);
+            this.scrollAnimation = null;
+            this.focusVisibleColumn(focusedWindow, animation.scrolledRight);
+            return false;
+        }
+
+        this.applyScroll(x, false);
+        return true;
+    }
+
+    private focusVisibleColumn(focusedWindow: Window|null, scrolledRight: boolean) {
         const visibleRange = this.getCurrentVisibleRange();
         if (focusedWindow !== null && !Range.contains(visibleRange, focusedWindow.column)) {
             // the focused window is no longer visible, find a new window to focus
@@ -196,6 +301,7 @@ namespace Desktop {
         gestureScroll: boolean;
         gestureScrollInvert: boolean;
         gestureScrollStep: number;
+        gestureScrollSnapCenter: boolean;
         scroller: Desktop.Scroller;
         clamper: Desktop.Clamper;
     }
@@ -278,5 +384,25 @@ namespace Desktop {
 
     export interface Clamper {
         clampScrollX(desktop: Desktop, x: number): number;
+    }
+
+    export interface GestureScrollSample {
+        time: number;
+        x: number;
+    }
+
+    export interface GestureScroll {
+        startX: number;
+        baseX: number;
+        samples: GestureScrollSample[];
+        saturated: boolean;
+    }
+
+    export interface ScrollAnimation {
+        from: number;
+        to: number;
+        velocity: number;
+        elapsedMs: number;
+        scrolledRight: boolean;
     }
 }

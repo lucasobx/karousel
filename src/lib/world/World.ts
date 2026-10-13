@@ -5,6 +5,7 @@ class World {
     private readonly workspaceSignalManager: SignalManager;
     private readonly shortcutActions: ShortcutAction[];
     private readonly screenResizedDelayer: Delayer;
+    private readonly scrollAnimationTicker: Ticker;
 
     constructor(config: Config) {
         const focusPasser = new FocusPassing.Passer();
@@ -39,6 +40,8 @@ class World {
             this.update();
         });
 
+        this.scrollAnimationTicker = new Ticker(8);
+
         this.pinManager = new PinManager();
 
         const layoutConfig = {
@@ -70,6 +73,7 @@ class World {
                 gestureScroll: config.gestureScroll,
                 gestureScrollInvert: config.gestureScrollInvert,
                 gestureScrollStep: config.gestureScrollStep,
+                gestureScrollSnapCenter: !config.scrollingLazy && config.scrollingCentered,
             },
             layoutConfig,
             focusPasser,
@@ -136,26 +140,43 @@ class World {
     }
 
     public gestureScroll(amount: number) {
-        this.do((clientManager, desktopManager) => {
-            const currentDesktop = desktopManager.getCurrentDesktop();
-            if (currentDesktop !== undefined) {
-                currentDesktop.gestureScroll(amount);
-            }
+        const desktop = this.desktopManager.getCurrentDesktop();
+        if (desktop === undefined) {
+            return;
+        }
+        let animate = false;
+        this.do(() => {
+            animate = desktop.gestureScroll(amount);
         });
+        if (animate) {
+            this.startScrollAnimation(desktop);
+        }
     }
 
     public gestureScrollFinish() {
+        const desktop = this.desktopManager.getCurrentDesktop();
+        if (desktop === undefined || !desktop.gestureScrollFinish()) {
+            return;
+        }
+        this.startScrollAnimation(desktop);
+    }
+
+    private startScrollAnimation(desktop: Desktop) {
+        this.scrollAnimationTicker.start(elapsedMs => this.stepScrollAnimation(desktop, elapsedMs));
+    }
+
+    private stepScrollAnimation(desktop: Desktop, elapsedMs: number) {
+        let running = false;
         this.do((clientManager, desktopManager) => {
             const focusedWindow = Workspace.activeWindow === null ? null : clientManager.findTiledWindow(Workspace.activeWindow);
-            const currentDesktop = desktopManager.getCurrentDesktop();
-            if (currentDesktop !== undefined) {
-                console.assert(focusedWindow === null || focusedWindow.column.grid.desktop === currentDesktop);
-                currentDesktop.gestureScrollFinish(focusedWindow);
-            }
+            const focusedWindowOnDesktop = focusedWindow !== null && focusedWindow.column.grid.desktop === desktop ? focusedWindow : null;
+            running = desktop.stepScrollAnimation(elapsedMs, focusedWindowOnDesktop);
         });
+        return running;
     }
 
     public destroy() {
+        this.scrollAnimationTicker.destroy();
         this.workspaceSignalManager.destroy();
         for (const shortcutAction of this.shortcutActions) {
             shortcutAction.destroy();
