@@ -47,6 +47,5 @@ tests.register("Pin", 20, () => {
     workspaceMock.activeWindow = pinned;
     qtMock.fireShortcut("karousel-window-toggle-floating");
     Assert.assert(pinned.tile === null);
-    pinned.frameGeometry = new MockQmlRect(10, 20, 100, 200); // This is needed because the window's preferredWidth can change when pinning, because frameGeometryChanged can fire before tileChanged. TODO: Ensure pinned window keeps its preferredWidth.
     Assert.grid(config, tilingArea, 100, [ [tiled1], [tiled2], [pinned] ], true);
 });
