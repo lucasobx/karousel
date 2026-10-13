@@ -31,6 +31,7 @@ class MockKwinClient {
     private _desktops: KwinDesktop[] = [];
     private _tile: Tile|null = null;
     public opacity = 1.0;
+    public sizeLocked = false;
 
     public readonly fullScreenChanged = new MockQSignal<[]>();
     public readonly desktopsChanged = new MockQSignal<[]>();
@@ -108,7 +109,7 @@ class MockKwinClient {
     }
 
     public get resizeable() {
-        return !this._fullScreen;
+        return !this._fullScreen && !this.sizeLocked;
     }
 
     public get fullScreen() {

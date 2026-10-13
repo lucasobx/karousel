@@ -4,6 +4,8 @@ namespace ClientState {
         private readonly defaultState: Tiled.WindowState;
         private readonly signalManager: SignalManager;
         private static readonly maxExternalFrameGeometryChangedIntervalMs = 1000;
+        private static readonly refusalIntervalMs = 10000;
+        private static readonly refusalsToAdopt = 3;
 
         constructor(world: World, client: ClientWrapper, grid: Grid) {
             this.defaultState = { skipSwitcher: client.kwinClient.skipSwitcher };
@@ -114,6 +116,10 @@ namespace ClientState {
             });
 
             const externalFrameGeometryChangedRateLimiter = new RateLimiter(4, Tiled.maxExternalFrameGeometryChangedIntervalMs);
+            const externalFrameGeometryAdoptedRateLimiter = new RateLimiter(1, Tiled.maxExternalFrameGeometryChangedIntervalMs);
+            let refusedWidth = 0;
+            let refusalCount = 0;
+            let refusalStart = 0;
             manager.connect(kwinClient.frameGeometryChanged, (oldGeometry: QmlRect) => {
                 // on Wayland, this fires after `tileChanged`
                 if (kwinClient.tile !== null) {
@@ -142,6 +148,7 @@ namespace ClientState {
                 }
 
                 if (kwinClient.resize) {
+                    refusalCount = 0;
                     world.do(() => {
                         if (newGeometry.width !== oldGeometry.width) {
                             window.column.onUserResizeWidth(
@@ -165,8 +172,24 @@ namespace ClientState {
                     client.getMaximizedMode() === MaximizedMode.Unmaximized &&
                     !Clients.isFullScreenGeometry(kwinClient) // not using `kwinClient.fullScreen` because it may not be set yet at this point
                 ) {
-                    if (externalFrameGeometryChangedRateLimiter.acquire()) {
-                        world.do(() => window.onFrameGeometryChanged());
+                    if (newGeometry.width !== client.getPlacedWidth()) {
+                        const now = Date.now();
+                        if (newGeometry.width === refusedWidth && now - refusalStart <= Tiled.refusalIntervalMs) {
+                            refusalCount++;
+                        } else {
+                            refusedWidth = newGeometry.width;
+                            refusalCount = 1;
+                            refusalStart = now;
+                        }
+                    }
+
+                    if (refusalCount >= Tiled.refusalsToAdopt) {
+                        refusalCount = 0;
+                        world.do(() => window.onFrameGeometryChanged(true));
+                    } else if (externalFrameGeometryChangedRateLimiter.acquire()) {
+                        world.do(() => window.onFrameGeometryChanged(false));
+                    } else if (externalFrameGeometryAdoptedRateLimiter.acquire()) {
+                        world.do(() => window.onFrameGeometryChanged(true));
                     }
                 }
             });

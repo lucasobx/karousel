@@ -4,13 +4,12 @@ class Window {
     public height: number;
     public readonly focusedState: Window.State;
     private skipArrange: boolean;
-    private readonly tiledAt: number;
-    private static readonly settleGracePeriodMs = 1000;
+    private windowedWidthKnown: boolean;
 
     constructor(client: ClientWrapper, column: Column) {
         this.client = client;
-        this.tiledAt = Date.now();
         this.height = client.kwinClient.frameGeometry.height.round();
+        this.windowedWidthKnown = !client.kwinClient.fullScreen;
 
         let maximizedMode = this.client.getMaximizedMode();
         if (maximizedMode === undefined) {
@@ -128,17 +127,14 @@ class Window {
         this.column.grid.desktop.onLayoutChanged();
     }
 
-    public onFrameGeometryChanged() {
-        if (
-            this.column.grid.config.snapNewColumnsToPresets &&
-            Date.now() - this.tiledAt < Window.settleGracePeriodMs
-        ) {
-            this.column.resizeWindows();
-            return;
+    public onFrameGeometryChanged(adopt: boolean) {
+        if (adopt || !this.windowedWidthKnown || !this.client.kwinClient.resizeable) {
+            const newGeometry = this.client.kwinClient.frameGeometry;
+            this.column.setWidth(newGeometry.width.round(), true);
+            this.windowedWidthKnown = true;
+        } else {
+            this.column.setWidth(this.column.getWidth(), false);
         }
-
-        const newGeometry = this.client.kwinClient.frameGeometry;
-        this.column.setWidth(newGeometry.width.round(), true);
         this.column.grid.desktop.onLayoutChanged();
     }
 

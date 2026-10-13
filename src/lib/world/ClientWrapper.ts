@@ -117,6 +117,10 @@ class ClientWrapper {
         return this.maximizedMode;
     }
 
+    public getPlacedWidth() {
+        return this.lastPlacement === null ? null : this.lastPlacement.width;
+    }
+
     public isManipulatingGeometry(newGeometry: QmlRect | null) {
         if (newGeometry !== null && newGeometry === this.lastPlacement) {
             return true;
