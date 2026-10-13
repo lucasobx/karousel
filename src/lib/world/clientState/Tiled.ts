@@ -75,6 +75,9 @@ namespace ClientState {
             let resizing = false;
             let resizeStartWidth = 0;
             let resizeNeighbor: { column: Column, startWidth: number } | undefined;
+            let resizeStartHeight = 0;
+            let resizeStartFrameHeight = 0;
+            let resizeHeightNeighbor: { window: Window, startHeight: number } | null | undefined;
             manager.connect(kwinClient.interactiveMoveResizeStarted, () => {
                 if (kwinClient.move) {
                     if (config.untileOnDrag) {
@@ -90,6 +93,9 @@ namespace ClientState {
                 if (kwinClient.resize) {
                     resizing = true;
                     resizeStartWidth = window.column.getWidth();
+                    resizeStartHeight = window.height;
+                    resizeStartFrameHeight = kwinClient.frameGeometry.height.round();
+                    resizeHeightNeighbor = undefined;
                     if (config.resizeNeighborColumn) {
                         const resizeNeighborColumn = Tiled.getResizeNeighborColumn(window);
                         if (resizeNeighborColumn !== null) {
@@ -111,6 +117,7 @@ namespace ClientState {
                 if (resizing) {
                     resizing = false;
                     resizeNeighbor = undefined;
+                    resizeHeightNeighbor = undefined;
                     window.column.grid.onUserResizeFinished();
                 }
             });
@@ -159,11 +166,20 @@ namespace ClientState {
                             );
                         }
                         if (newGeometry.height !== oldGeometry.height) {
-                            window.column.adjustWindowHeight(
-                                window,
-                                newGeometry.height - oldGeometry.height,
-                                newGeometry.y !== oldGeometry.y,
-                            );
+                            if (resizeHeightNeighbor === undefined) {
+                                const neighbor = newGeometry.y !== oldGeometry.y
+                                    ? window.column.getAboveWindow(window)
+                                    : window.column.getBelowWindow(window);
+                                resizeHeightNeighbor = neighbor === null ? null : { window: neighbor, startHeight: neighbor.height };
+                            }
+                            if (resizeHeightNeighbor !== null) {
+                                window.column.onUserResizeHeight(
+                                    window,
+                                    resizeStartHeight,
+                                    newGeometry.height - resizeStartFrameHeight,
+                                    resizeHeightNeighbor,
+                                );
+                            }
                         }
                     });
                 } else if (

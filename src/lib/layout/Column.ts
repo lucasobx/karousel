@@ -255,8 +255,16 @@ class Column {
             return;
         }
 
-        window.height += heightDelta;
-        otherWindow.height -= heightDelta;
+        this.onUserResizeHeight(window, window.height, heightDelta, { window: otherWindow, startHeight: otherWindow.height });
+    }
+
+    public onUserResizeHeight(window: Window, startHeight: number, currentDelta: number, neighbor: { window: Window, startHeight: number }) {
+        const minDelta = Math.max(window.getMinHeight() - startHeight, neighbor.startHeight - neighbor.window.getMaxHeight());
+        const maxDelta = Math.min(window.getMaxHeight() - startHeight, neighbor.startHeight - neighbor.window.getMinHeight());
+        const delta = minDelta > maxDelta ? 0 : clamp(currentDelta, minDelta, maxDelta);
+
+        window.height = startHeight + delta;
+        neighbor.window.height = neighbor.startHeight - delta;
 
         this.grid.desktop.onLayoutChanged();
     }
@@ -270,15 +278,21 @@ class Column {
             this.stacked = this.grid.config.stackColumnsByDefault;
         }
 
-        let remainingPixels = this.grid.desktop.tilingArea.height - (nWindows-1) * this.grid.config.gapsInnerVertical;
-        let remainingWindows = nWindows;
-        for (const window of this.windows.iterator()) {
-            const windowHeight = Math.round(remainingPixels / remainingWindows);
-            window.height = windowHeight;
-            remainingPixels -= windowHeight;
-            remainingWindows--;
-        }
-        // TODO: respect min height
+        const windows = Array.from(this.windows.iterator());
+        const availableHeight = this.grid.desktop.tilingArea.height - (nWindows-1) * this.grid.config.gapsInnerVertical;
+        const heights = fillSpace(
+            availableHeight,
+            windows.map(window => ({ min: window.getMinHeight(), max: window.getMaxHeight() })),
+        );
+
+        let remainder = availableHeight - sum(...heights);
+        windows.forEach((window, index) => {
+            if (remainder > 0 && heights[index] < window.getMaxHeight()) {
+                heights[index]++;
+                remainder--;
+            }
+            window.height = heights[index];
+        });
 
         this.grid.desktop.onLayoutChanged();
     }

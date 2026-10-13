@@ -163,3 +163,15 @@ tests.register("Vertical resize", 10, () => {
         }
     }
 });
+
+tests.register("Window heights respect min size", 1, () => {
+    const config = getDefaultConfig();
+    const { qtMock, workspaceMock, world } = init(config);
+
+    const [client1, client2] = workspaceMock.createClientsWithWidths(300, 300);
+    client1.minSize = new MockQmlSize(10, 400);
+    qtMock.fireShortcut("karousel-window-move-left");
+
+    Assert.equal(client1.getActualFrameGeometry().height, 400);
+    Assert.equal(client2.getActualFrameGeometry().height, tilingArea.height - gapV - 400);
+});

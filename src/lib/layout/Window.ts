@@ -61,6 +61,14 @@ class Window {
         }
     }
 
+    public getMinHeight() {
+        return this.client.kwinClient.minSize.height.ceil();
+    }
+
+    public getMaxHeight() {
+        return Math.max(this.client.kwinClient.maxSize.height.floor(), this.getMinHeight());
+    }
+
     public focus() {
         this.client.focus();
         const kwinClient = this.client.kwinClient;

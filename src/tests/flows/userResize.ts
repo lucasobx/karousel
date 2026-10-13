@@ -77,9 +77,8 @@ tests.register("User resize", 10, () => {
         workspaceMock.resizeWindow(clientRightTop, true, true, false, new MockQmlSize(-10, 0));
         assertSizes(310, 295, h-20, h+20);
 
-        // TODO
-        // workspaceMock.resizeWindow(clientRightBottom, true, false, true, new MockQmlSize(0, -80));
-        // assertSizes(310, 295, h+60, h-20);
+        workspaceMock.resizeWindow(clientRightTop, true, false, false, new MockQmlSize(0, 80), new MockQmlSize(0, -20));
+        assertSizes(310, 295, h+20, h-20);
     }
 
     {
