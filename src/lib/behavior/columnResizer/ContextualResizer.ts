@@ -36,7 +36,7 @@ class ContextualResizer {
             return;
         }
 
-        column.setWidth(newWidth, true);
+        column.setRelativeWidth(newWidth);
         desktop.scrollCenterVisible(column);
     }
 
@@ -83,7 +83,7 @@ class ContextualResizer {
             return;
         }
 
-        column.setWidth(newWidth, true);
+        column.setRelativeWidth(newWidth);
         desktop.scrollCenterVisible(column);
     }
 
@@ -92,7 +92,7 @@ class ContextualResizer {
         const desktop = grid.desktop;
         const presetWidths = this.presetWidths.getWidths(column.getMinWidth(), column.getMaxWidth(), desktop.tilingArea.width);
         const maxWidth = presetWidths[presetWidths.length-1];
-        column.setWidth(maxWidth, true);
+        column.setRelativeWidth(maxWidth);
         desktop.scrollCenterVisible(column);
     }
 
@@ -101,7 +101,7 @@ class ContextualResizer {
         const desktop = grid.desktop;
         const presetWidths = this.presetWidths.getWidths(column.getMinWidth(), column.getMaxWidth(), desktop.tilingArea.width);
         const minWidth = presetWidths[0];
-        column.setWidth(minWidth, true);
+        column.setRelativeWidth(minWidth);
         desktop.scrollCenterVisible(column);
     }
 }

@@ -13,7 +13,7 @@ class RawResizer {
         if (newWidth === undefined) {
             return;
         }
-        column.setWidth(newWidth, true);
+        column.setRelativeWidth(newWidth);
     }
 
     public decreaseWidth(column: Column) {
@@ -26,18 +26,18 @@ class RawResizer {
         if (newWidth === undefined) {
             return;
         }
-        column.setWidth(newWidth, true);
+        column.setRelativeWidth(newWidth);
     }
 
     public maximizeWidth(column: Column) {
         const presetWidths = this.presetWidths.getWidths(column.getMinWidth(), column.getMaxWidth(), column.grid.desktop.tilingArea.width);
         const maxWidth = presetWidths[presetWidths.length-1];
-        column.setWidth(maxWidth, true);
+        column.setRelativeWidth(maxWidth);
     }
 
     public minimizeWidth(column: Column) {
         const presetWidths = this.presetWidths.getWidths(column.getMinWidth(), column.getMaxWidth(), column.grid.desktop.tilingArea.width);
         const minWidth = presetWidths[0];
-        column.setWidth(minWidth, true);
+        column.setRelativeWidth(minWidth);
     }
 }

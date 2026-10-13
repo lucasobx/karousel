@@ -6,6 +6,7 @@ class Column {
     private stacked: boolean;
     private focusTaker: Window|null;
     private presetWidthIdx: number|null;
+    private widthProportion: number|null;
     private static readonly minWidth = 40;
 
     constructor(grid: Grid, leftColumn: Column|null) {
@@ -15,6 +16,7 @@ class Column {
         this.stacked = grid.config.stackColumnsByDefault;
         this.focusTaker = null;
         this.presetWidthIdx = null;
+        this.widthProportion = null;
         this.grid = grid;
         this.grid.onColumnAdded(this, leftColumn);
     }
@@ -101,19 +103,57 @@ class Column {
     }
 
     public setWidth(width: number, setPreferred: boolean) {
+        if (clamp(width, this.getMinWidth(), this.getMaxWidth()) === this.width) {
+            return;
+        }
+
+        this.presetWidthIdx = null;
+        this.widthProportion = null;
+        this.applyWidth(width, setPreferred);
+    }
+
+    public setRelativeWidth(width: number) {
+        width = clamp(width, this.getMinWidth(), this.getMaxWidth());
+        const presetIndex = this.getPresetWidths().indexOf(width);
+        if (presetIndex >= 0) {
+            this.setWidthPreset(presetIndex);
+            return;
+        }
+        if (width === this.width) {
+            return;
+        }
+
+        const gap = this.grid.config.gapsInnerHorizontal;
+        this.presetWidthIdx = null;
+        this.widthProportion = (width + gap) / (this.grid.desktop.tilingArea.width + gap);
+        this.applyWidth(width, true);
+    }
+
+    public reapplyWidthConstraints() {
+        if (this.presetWidthIdx !== null || this.widthProportion !== null) {
+            this.updateWidth();
+        } else {
+            this.applyWidth(this.width, false);
+        }
+    }
+
+    private applyWidth(width: number, setPreferred: boolean) {
         width = clamp(width, this.getMinWidth(), this.getMaxWidth());
         if (width === this.width) {
             return;
         }
 
         this.width = width;
-        this.presetWidthIdx = null; // cyclePresetWidth() re-sets this afterwards
         if (setPreferred) {
             for (const window of this.windows.iterator()) {
                 window.client.preferredWidth = width;
             }
         }
         this.grid.onColumnWidthChanged(this);
+    }
+
+    private getPresetWidths() {
+        return this.grid.config.presetWidths.getWidths(this.getMinWidth(), this.getMaxWidth(), this.grid.desktop.tilingArea.width);
     }
 
     public adjustWidth(widthDelta: number, setPreferred: boolean) {
@@ -144,21 +184,26 @@ class Column {
             }
         }
 
-        this.setWidthPreset(widths[index], index);
+        this.setWidthPreset(index);
     }
 
-    private setWidthPreset(width: number, index: number) {
-        this.setWidth(width, true);
+    private setWidthPreset(index: number) {
+        const widths = this.getPresetWidths();
         this.presetWidthIdx = index;
+        this.widthProportion = null;
+        this.applyWidth(widths[index], true);
     }
 
     public updateWidth() {
-        if (this.presetWidthIdx !== null) {
-            const widths = this.grid.config.presetWidths.getWidths(this.getMinWidth(), this.getMaxWidth(), this.grid.desktop.tilingArea.width);
-            if (this.presetWidthIdx < widths.length) {
-                this.setWidthPreset(widths[this.presetWidthIdx], this.presetWidthIdx);
-                return;
-            }
+        if (this.presetWidthIdx !== null && this.presetWidthIdx < this.getPresetWidths().length) {
+            this.setWidthPreset(this.presetWidthIdx);
+            return;
+        }
+
+        if (this.widthProportion !== null) {
+            const gap = this.grid.config.gapsInnerHorizontal;
+            this.applyWidth(Math.round((this.grid.desktop.tilingArea.width + gap) * this.widthProportion - gap), true);
+            return;
         }
 
         let minErr = Infinity;
@@ -333,11 +378,10 @@ class Column {
             if (index < 0) {
                 this.setWidth(window.client.preferredWidth, false);
             } else {
-                const widths = presetWidths.getWidths(minWidth, maxWidth, tilingAreaWidth);
-                this.setWidthPreset(widths[index], index);
+                this.setWidthPreset(index);
             }
         } else {
-            this.setWidth(this.width, false); // re-apply width constraints of the new window
+            this.reapplyWidthConstraints(); // re-apply width constraints of the new window
         }
 
         this.resizeWindows();

@@ -239,7 +239,7 @@ class Actions {
             availableSpace - gapsWidth,
             visibleColumns.map(column => ({ min: column.getMinWidth(), max: column.getMaxWidth() })),
         );
-        visibleColumns.forEach((column, index) => column.setWidth(widths[index], true));
+        visibleColumns.forEach((column, index) => column.setRelativeWidth(widths[index]));
 
         desktop.scrollCenterRange(Range.fromRanges(
             visibleColumns[0],
@@ -317,7 +317,7 @@ class Actions {
         }
 
         const widths = fillSpace(availableSpace - gapsWidth, columnConstraints);
-        columns.forEach((column, index) => column.setWidth(widths[index], true));
+        columns.forEach((column, index) => column.setRelativeWidth(widths[index]));
         desktop.scrollCenterRange(Range.fromRanges(firstColumn, lastColumn));
         return true;
     };

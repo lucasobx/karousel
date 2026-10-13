@@ -133,7 +133,7 @@ class Window {
             this.column.setWidth(newGeometry.width.round(), true);
             this.windowedWidthKnown = true;
         } else {
-            this.column.setWidth(this.column.getWidth(), false);
+            this.column.reapplyWidthConstraints();
         }
         this.column.grid.desktop.onLayoutChanged();
     }
