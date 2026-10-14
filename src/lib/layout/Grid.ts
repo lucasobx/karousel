@@ -4,6 +4,7 @@ class Grid {
     public readonly focusPasser: FocusPassing.Passer;
     private readonly columns: LinkedList<Column>;
     private lastFocusedColumn: Column|null;
+    private openedColumn: Grid.OpenedColumn|null;
     private width: number;
     private userResize: boolean; // is any part of the grid being resized by the user
     private readonly userResizeFinishedDelayer: Delayer;
@@ -14,6 +15,7 @@ class Grid {
         this.focusPasser = focusPasser;
         this.columns = new LinkedList();
         this.lastFocusedColumn = null;
+        this.openedColumn = null;
         this.width = 0;
         this.userResize = false;
         this.userResizeFinishedDelayer = new Delayer(50, () => {
@@ -30,6 +32,7 @@ class Grid {
         }
         const movedLeft = leftColumn === null ? true : column.isToTheRightOf(leftColumn);
         const firstMovedColumn = movedLeft ? column : this.getRightColumn(column);
+        this.openedColumn = null;
         this.columns.move(column, leftColumn);
         this.columnsSetX(firstMovedColumn);
         this.desktop.onLayoutChanged();
@@ -37,6 +40,7 @@ class Grid {
     }
 
     public moveColumnLeft(column: Column) {
+        this.openedColumn = null;
         this.columns.moveBack(column);
         this.columnsSetX(column);
         this.desktop.onLayoutChanged();
@@ -148,6 +152,13 @@ class Grid {
     }
 
     public onColumnAdded(column: Column, leftColumn: Column|null) {
+        this.openedColumn = leftColumn !== null && leftColumn === this.getLastFocusedColumn() ? {
+            column: column,
+            previousColumn: leftColumn,
+            scrollX: this.desktop.getCurrentVisibleRange().getLeft(),
+            focused: false,
+        } : null;
+
         if (leftColumn === null) {
             this.columns.insertStart(column);
         } else {
@@ -165,11 +176,21 @@ class Grid {
         if (column === this.lastFocusedColumn) {
             this.lastFocusedColumn = columnToFocus;
         }
+        const openedColumn = this.openedColumn;
+        this.openedColumn = null;
 
         this.columns.remove(column);
         this.columnsSetX(rightColumn);
 
         this.desktop.onLayoutChanged();
+        if (
+            openedColumn !== null &&
+            openedColumn.focused &&
+            column === openedColumn.column &&
+            this.lastFocusedColumn === openedColumn.previousColumn
+        ) {
+            this.desktop.setScroll(openedColumn.scrollX, false);
+        }
         if (columnToFocus !== null) {
             switch (passFocus) {
             case FocusPassing.Type.Immediate:
@@ -196,6 +217,13 @@ class Grid {
         const lastFocusedColumn = this.getLastFocusedColumn();
         if (lastFocusedColumn !== null) {
             lastFocusedColumn.restoreToTiled(window);
+        }
+        if (this.openedColumn !== null) {
+            if (column === this.openedColumn.column) {
+                this.openedColumn.focused = true;
+            } else if (!this.openedColumn.column.isClosing()) {
+                this.openedColumn = null;
+            }
         }
         this.lastFocusedColumn = column;
         this.desktop.scrollToColumn(column, false);
@@ -231,5 +259,14 @@ class Grid {
 
     public destroy() {
         this.userResizeFinishedDelayer.destroy();
+    }
+}
+
+namespace Grid {
+    export interface OpenedColumn {
+        column: Column;
+        previousColumn: Column;
+        scrollX: number;
+        focused: boolean;
     }
 }

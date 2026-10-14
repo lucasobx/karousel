@@ -445,6 +445,15 @@ class Column {
         }
     }
 
+    public isClosing() {
+        for (const window of this.windows.iterator()) {
+            if (!window.client.kwinClient.deleted) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public restoreToTiled(focusedWindow: Window) {
         const lastFocusedWindow = this.getFocusTaker();
         if (lastFocusedWindow !== null && lastFocusedWindow !== focusedWindow) {

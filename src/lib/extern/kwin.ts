@@ -60,6 +60,7 @@ interface KwinClient {
     readonly maxSize: Readonly<QmlSize>;
     readonly transient: boolean;
     readonly transientFor: KwinClient | null;
+    readonly deleted: boolean;
     readonly clientGeometry: Readonly<QmlRect>;
     readonly move: boolean;
     readonly resize: boolean;

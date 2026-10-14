@@ -9,6 +9,7 @@ class MockKwinClient {
     public readonly transient: boolean;
     public move = false;
     public resize = false;
+    public deleted = false;
     public readonly fullScreenable: boolean = true;
     public readonly maximizable: boolean = true;
     public readonly output: Output = { __brand: "Output" };

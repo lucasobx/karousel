@@ -64,6 +64,13 @@ class MockWorkspace {
         };
     }
 
+    public closeWindow(window: MockKwinClient, nextActiveWindow: MockKwinClient) {
+        window.deleted = true;
+        this.activeWindow = nextActiveWindow;
+        this.windows.splice(this.windows.indexOf(window), 1);
+        this.windowRemoved.fire(window);
+    }
+
     public moveWindow(window: MockKwinClient, ...deltas: QmlPoint[]) {
         const frame = window.getFrameGeometryCopy();
         window.move = true;
