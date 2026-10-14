@@ -3,7 +3,7 @@ function initWorkspaceSignalHandlers(world: World, focusPasser: FocusPassing.Pas
 
     manager.connect(Workspace.windowAdded, (kwinClient: KwinClient) => {
         world.do((clientManager, desktopManager) => {
-            clientManager.addClient(kwinClient);
+            clientManager.addClient(kwinClient, true);
         });
     });
 

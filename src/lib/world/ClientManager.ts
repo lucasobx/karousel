@@ -6,6 +6,7 @@ class ClientManager {
     private focusLeftTiling: boolean;
     private pendingCursorWindow: Window|null;
     private readonly windowRuleEnforcer: WindowRuleEnforcer;
+    private readonly defaultColumnWidth: PresetWidths.Width | null;
 
     constructor(
         config: Config,
@@ -31,9 +32,19 @@ class ClientManager {
             log("failed to parse windowRules:", error);
         }
         this.windowRuleEnforcer = new WindowRuleEnforcer(parsedWindowRules);
+
+        let defaultColumnWidth: PresetWidths.Width | null = null;
+        if (config.defaultColumnWidth.trim() !== "") {
+            try {
+                defaultColumnWidth = PresetWidths.parseWidth(config.defaultColumnWidth);
+            } catch (error: any) {
+                log("failed to parse defaultColumnWidth:", error);
+            }
+        }
+        this.defaultColumnWidth = defaultColumnWidth;
     }
 
-    public addClient(kwinClient: KwinClient) {
+    public addClient(kwinClient: KwinClient, opened: boolean) {
         console.assert(!this.hasClient(kwinClient));
 
         let constructState: (client: ClientWrapper) => ClientState.State;
@@ -57,6 +68,7 @@ class ClientManager {
             constructState,
             this.findTransientFor(kwinClient),
             this.windowRuleEnforcer.initClientSignalManager(this.world, kwinClient),
+            opened ? this.getDefaultColumnWidth(kwinClient) : null,
         );
         this.clientMap.set(kwinClient, client);
 
@@ -94,6 +106,11 @@ class ClientManager {
         }
 
         return transientFor;
+    }
+
+    private getDefaultColumnWidth(kwinClient: KwinClient) {
+        const ruleWidth = this.windowRuleEnforcer.getDefaultColumnWidth(kwinClient);
+        return ruleWidth !== undefined ? ruleWidth : this.defaultColumnWidth;
     }
 
     public minimizeClient(kwinClient: KwinClient) {

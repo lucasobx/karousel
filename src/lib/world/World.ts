@@ -101,7 +101,7 @@ class World {
 
     private addExistingClients() {
         for (const kwinClient of Workspace.windows) {
-            this.clientManager.addClient(kwinClient);
+            this.clientManager.addClient(kwinClient, false);
         }
     }
 

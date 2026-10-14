@@ -13,7 +13,7 @@ let gapH: number;
 let gapV: number;
 let runLog: string[];
 
-function init(config: Config) {
+function init(config: Config, existingFrames: MockQmlRect[] = []) {
     screen = new MockQmlRect(0, 0, 800, 600);
     tilingArea = new MockQmlRect(
         config.gapsOuterLeft,
@@ -40,8 +40,10 @@ function init(config: Config) {
         },
     };
 
+    const existingClients = existingFrames.map(frame => new MockKwinClient(frame));
+    workspaceMock.windows.push(...existingClients);
     const world = new World(config);
-    return { qtMock, workspaceMock, world };
+    return { qtMock, workspaceMock, world, existingClients };
 }
 
 function getGridBounds(clientLeft: MockKwinClient, clientRight: MockKwinClient) {

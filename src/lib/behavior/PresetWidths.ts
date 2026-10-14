@@ -62,20 +62,28 @@ class PresetWidths implements PresetWidthsProvider {
         }
 
         return presetWidths.split(",").map((widthStr: string) => {
-            widthStr = widthStr.trim();
-
-            const widthPx = PresetWidths.parseNumberWithSuffix(widthStr, "px");
-            if (widthPx !== undefined) {
-                return () => widthPx;
+            const width = PresetWidths.parseWidth(widthStr);
+            if ("pixels" in width) {
+                return () => width.pixels;
             }
-
-            const widthPct = PresetWidths.parseNumberWithSuffix(widthStr, "%");
-            if (widthPct !== undefined) {
-                return getRatioFunction(widthPct / 100.0);
-            }
-
-            return getRatioFunction(PresetWidths.parseNumberSafe(widthStr));
+            return getRatioFunction(width.proportion);
         });
+    }
+
+    public static parseWidth(widthStr: string): PresetWidths.Width {
+        widthStr = widthStr.trim();
+
+        const widthPx = PresetWidths.parseNumberWithSuffix(widthStr, "px");
+        if (widthPx !== undefined) {
+            return { pixels: widthPx };
+        }
+
+        const widthPct = PresetWidths.parseNumberWithSuffix(widthStr, "%");
+        if (widthPct !== undefined) {
+            return { proportion: widthPct / 100.0 };
+        }
+
+        return { proportion: PresetWidths.parseNumberSafe(widthStr) };
     }
 
     private static parseNumberSafe(str: string) {
@@ -92,4 +100,8 @@ class PresetWidths implements PresetWidthsProvider {
         }
         return PresetWidths.parseNumberSafe(str.substring(0, str.length-suffix.length).trim());
     }
+}
+
+namespace PresetWidths {
+    export type Width = { pixels: number } | { proportion: number };
 }

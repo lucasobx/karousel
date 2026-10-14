@@ -460,6 +460,27 @@
                             </item>
 
                             <item row="11" column="0">
+                                <widget class="QLabel" name="label_defaultColumnWidth">
+                                    <property name="text">
+                                        <string>Default column width:</string>
+                                    </property>
+                                    <property name="toolTip">
+                                        <string>Width of newly opened columns</string>
+                                    </property>
+                                </widget>
+                            </item>
+                            <item row="11" column="1">
+                                <widget class="QLineEdit" name="kcfg_defaultColumnWidth">
+                                    <property name="placeholderText">
+                                        <string>Size requested by the application</string>
+                                    </property>
+                                    <property name="toolTip">
+                                        <string>Supported units: "px" and "%". Leave empty to use the size the application asks for.</string>
+                                    </property>
+                                </widget>
+                            </item>
+
+                            <item row="12" column="0">
                                 <widget class="QLabel" name="label_verticalResizeStep">
                                     <property name="text">
                                         <string>Vertical resize step size:</string>
@@ -469,7 +490,7 @@
                                     </property>
                                 </widget>
                             </item>
-                            <item row="11" column="1">
+                            <item row="12" column="1">
                                 <widget class="QSpinBox" name="kcfg_verticalResizeStep">
                                     <property name="suffix">
                                         <string> px</string>
@@ -486,14 +507,14 @@
                                 </widget>
                             </item>
 
-                            <item row="12" column="0">
+                            <item row="13" column="0">
                                 <widget class="QLabel" name="label_offScreenOpacity">
                                     <property name="text">
                                         <string>Obscured window opacity:</string>
                                     </property>
                                 </widget>
                             </item>
-                            <item row="12" column="1">
+                            <item row="13" column="1">
                                 <widget class="QSpinBox" name="kcfg_offScreenOpacity">
                                     <property name="suffix">
                                         <string> %</string>

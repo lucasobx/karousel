@@ -3,6 +3,7 @@ class ClientWrapper {
     private readonly transients: ClientWrapper[];
     private readonly signalManager: SignalManager;
     public preferredWidth: number;
+    public initialColumnWidth: PresetWidths.Width | null;
     private maximizedMode: MaximizedMode | undefined;
     private readonly manipulatingGeometry: Doer;
     private lastPlacement: QmlRect | null; // workaround for issue #19
@@ -12,6 +13,7 @@ class ClientWrapper {
         constructInitialState: (client: ClientWrapper) => ClientState.State,
         public transientFor: ClientWrapper | null,
         private readonly rulesSignalManager: SignalManager | null,
+        initialColumnWidth: PresetWidths.Width | null,
     ) {
         this.kwinClient = kwinClient;
         this.transientFor = transientFor;
@@ -22,6 +24,7 @@ class ClientWrapper {
         this.signalManager = ClientWrapper.initSignalManager(this);
         this.rulesSignalManager = rulesSignalManager;
         this.preferredWidth = kwinClient.frameGeometry.width.round();
+        this.initialColumnWidth = initialColumnWidth;
         this.manipulatingGeometry = new Doer();
         this.lastPlacement = null;
         this.stateManager = new ClientState.Manager(constructInitialState(this));

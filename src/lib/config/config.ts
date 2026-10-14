@@ -9,6 +9,7 @@ interface Config {
     stackOffsetY: number;
     manualScrollStep: number;
     presetWidths: string;
+    defaultColumnWidth: string;
     verticalResizeStep: number;
     offScreenOpacity: number;
     untileOnDrag: boolean;

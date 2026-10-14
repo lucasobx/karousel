@@ -148,6 +148,10 @@ class Column {
 
     public setRelativeWidth(width: number) {
         this.takeOverExpandedWidth();
+        this.applyRelativeWidth(width);
+    }
+
+    private applyRelativeWidth(width: number) {
         width = clamp(width, this.getMinWidth(), this.getMaxWidth());
         const presetIndex = this.getPresetWidths().indexOf(width);
         if (presetIndex >= 0) {
@@ -185,6 +189,15 @@ class Column {
             }
         }
         this.grid.onColumnWidthChanged(this);
+    }
+
+    private applyInitialWidth(width: PresetWidths.Width) {
+        if ("pixels" in width) {
+            this.setWidth(width.pixels, true);
+            return;
+        }
+        const gap = this.grid.config.gapsInnerHorizontal;
+        this.applyRelativeWidth(Math.floor((this.grid.desktop.tilingArea.width + gap) * width.proportion - gap));
     }
 
     private getPresetWidths() {
@@ -419,17 +432,22 @@ class Column {
         }
 
         if (this.width === 0) {
-            const presetWidths = this.grid.config.presetWidths;
-            const minWidth = this.getMinWidth();
-            const maxWidth = this.getMaxWidth();
-            const tilingAreaWidth = this.grid.desktop.tilingArea.width;
-            const index = this.grid.config.snapNewColumnsToPresets
-                ? presetWidths.closestIndex(window.client.preferredWidth, minWidth, maxWidth, tilingAreaWidth)
-                : -1;
-            if (index < 0) {
-                this.setWidth(window.client.preferredWidth, false);
+            const initialWidth = window.client.initialColumnWidth;
+            if (initialWidth !== null) {
+                this.applyInitialWidth(initialWidth);
             } else {
-                this.setWidthPreset(index);
+                const presetWidths = this.grid.config.presetWidths;
+                const minWidth = this.getMinWidth();
+                const maxWidth = this.getMaxWidth();
+                const tilingAreaWidth = this.grid.desktop.tilingArea.width;
+                const index = this.grid.config.snapNewColumnsToPresets
+                    ? presetWidths.closestIndex(window.client.preferredWidth, minWidth, maxWidth, tilingAreaWidth)
+                    : -1;
+                if (index < 0) {
+                    this.setWidth(window.client.preferredWidth, false);
+                } else {
+                    this.setWidthPreset(index);
+                }
             }
         } else {
             this.reapplyWidthConstraints(); // re-apply width constraints of the new window

@@ -110,6 +110,11 @@ const configDef = [
         default: "50%, 100%",
     },
     {
+        name: "defaultColumnWidth",
+        type: "String",
+        default: "",
+    },
+    {
         name: "verticalResizeStep",
         type: "UInt",
         default: 32,

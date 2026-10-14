@@ -2,12 +2,24 @@ class WindowRuleEnforcer {
     private readonly preferFloating: ClientMatcher;
     private readonly preferTiling: ClientMatcher;
     private readonly followCaption: RegExp;
+    private readonly columnWidthRules: { matcher: ClientMatcher, width: PresetWidths.Width | null }[];
 
     constructor(windowRules: WindowRule[]) {
         const [floatRegex, tileRegex, followCaptionRegex] = WindowRuleEnforcer.createWindowRuleRegexes(windowRules);
         this.preferFloating = new ClientMatcher(floatRegex);
         this.preferTiling = new ClientMatcher(tileRegex);
         this.followCaption = followCaptionRegex;
+        this.columnWidthRules = WindowRuleEnforcer.createColumnWidthRules(windowRules);
+    }
+
+    public getDefaultColumnWidth(kwinClient: KwinClient) {
+        let width: PresetWidths.Width | null | undefined;
+        for (const rule of this.columnWidthRules) {
+            if (rule.matcher.matches(kwinClient)) {
+                width = rule.width;
+            }
+        }
+        return width;
     }
 
     public shouldTile(kwinClient: KwinClient) {
@@ -49,6 +61,9 @@ class WindowRuleEnforcer {
         const tileRegexes: string[] = [];
         const followCaptionRegexes: string[] = [];
         for (const windowRule of windowRules) {
+            if (windowRule.tile === undefined) {
+                continue;
+            }
             const ruleClass = WindowRuleEnforcer.parseRegex(windowRule.class);
             const ruleCaption = WindowRuleEnforcer.parseRegex(windowRule.caption);
             const ruleString = ClientMatcher.getRuleString(
@@ -67,6 +82,28 @@ class WindowRuleEnforcer {
             WindowRuleEnforcer.joinRegexes(tileRegexes),
             WindowRuleEnforcer.joinRegexes(followCaptionRegexes),
         ];
+    }
+
+    private static createColumnWidthRules(windowRules: WindowRule[]) {
+        const columnWidthRules: { matcher: ClientMatcher, width: PresetWidths.Width | null }[] = [];
+        for (const windowRule of windowRules) {
+            if (windowRule.defaultColumnWidth === undefined) {
+                continue;
+            }
+            try {
+                const ruleString = ClientMatcher.getRuleString(
+                    WindowRuleEnforcer.wrapParens(WindowRuleEnforcer.parseRegex(windowRule.class)),
+                    WindowRuleEnforcer.wrapParens(WindowRuleEnforcer.parseRegex(windowRule.caption)),
+                );
+                columnWidthRules.push({
+                    matcher: new ClientMatcher(WindowRuleEnforcer.joinRegexes([ruleString])),
+                    width: windowRule.defaultColumnWidth.trim() === "" ? null : PresetWidths.parseWidth(windowRule.defaultColumnWidth),
+                });
+            } catch (error: any) {
+                log("failed to parse defaultColumnWidth:", error);
+            }
+        }
+        return columnWidthRules;
     }
 
     private static parseRegex(rawRule: string | undefined) {

@@ -13,6 +13,7 @@ namespace ClientState {
 
             const column = new Column(grid, grid.getLastFocusedColumn() ?? grid.getLastColumn());
             const window = new Window(client, column);
+            client.initialColumnWidth = null;
 
             this.window = window;
             this.signalManager = Tiled.initSignalManager(world, window, grid.config);
