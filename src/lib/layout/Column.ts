@@ -77,7 +77,19 @@ class Column {
     }
 
     public getWidth() {
+        if (this.grid.isExpandingSingleColumn()) {
+            return this.getMaxWidth();
+        }
         return this.width;
+    }
+
+    private takeOverExpandedWidth() {
+        if (!this.grid.isExpandingSingleColumn()) {
+            return;
+        }
+        const width = this.getWidth();
+        this.grid.suppressSingleColumnExpansion();
+        this.setRelativeWidth(width);
     }
 
     public getMinWidth() {
@@ -113,6 +125,7 @@ class Column {
     }
 
     public setRelativeWidth(width: number) {
+        this.takeOverExpandedWidth();
         width = clamp(width, this.getMinWidth(), this.getMaxWidth());
         const presetIndex = this.getPresetWidths().indexOf(width);
         if (presetIndex >= 0) {
@@ -161,6 +174,7 @@ class Column {
     }
 
     public cyclePresetWidth(forwards: boolean) {
+        this.takeOverExpandedWidth();
         const presetWidths = this.grid.config.presetWidths;
         const minWidth = this.getMinWidth();
         const maxWidth = this.getMaxWidth();
@@ -225,7 +239,7 @@ class Column {
 
     // returns x position of right edge in grid space
     public getRight() {
-        return this.gridX + this.width;
+        return this.gridX + this.getWidth();
     }
 
     public onUserResizeWidth(
@@ -234,6 +248,7 @@ class Column {
         resizingLeftSide: boolean,
         neighbor?: { column: Column, startWidth: number },
     ) {
+        this.takeOverExpandedWidth();
         const oldColumnWidth = this.getWidth();
         this.setWidth(startWidth + currentDelta, true);
         const actualDelta = this.getWidth() - startWidth;
@@ -330,14 +345,14 @@ class Column {
         }
         let y = this.grid.desktop.tilingArea.y;
         for (const window of this.windows.iterator()) {
-            window.arrange(x, y, this.width, window.height);
+            window.arrange(x, y, this.getWidth(), window.height);
             y += window.height + this.grid.config.gapsInnerVertical;
         }
     }
 
     public arrangeStacked(x: number) {
         const nWindows = this.windows.length();
-        const windowWidth = this.width - (nWindows - 1) * this.grid.config.stackOffsetX;
+        const windowWidth = this.getWidth() - (nWindows - 1) * this.grid.config.stackOffsetX;
         const windowHeight = this.grid.desktop.tilingArea.height - (nWindows - 1) * this.grid.config.stackOffsetY;
 
         let windowX = x;

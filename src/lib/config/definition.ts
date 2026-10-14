@@ -150,6 +150,11 @@ const configDef = [
         default: false,
     },
     {
+        name: "expandSingleColumn",
+        type: "Bool",
+        default: false,
+    },
+    {
         name: "skipSwitcher",
         type: "Bool",
         default: false,

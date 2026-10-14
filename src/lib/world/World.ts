@@ -55,6 +55,7 @@ class World {
             resizeNeighborColumn: config.resizeNeighborColumn,
             reMaximize: config.reMaximize,
             snapNewColumnsToPresets: config.snapNewColumnsToPresets,
+            expandSingleColumn: config.expandSingleColumn,
             skipSwitcher: config.skipSwitcher,
             tiledKeepBelow: config.tiledKeepBelow,
             maximizedKeepAbove: config.floatingKeepAbove,

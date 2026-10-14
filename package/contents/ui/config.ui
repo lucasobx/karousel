@@ -80,6 +80,16 @@
                                             </widget>
                                         </item>
                                         <item>
+                                            <widget class="QCheckBox" name="kcfg_expandSingleColumn">
+                                                <property name="text">
+                                                    <string>Expand a single column to full width</string>
+                                                </property>
+                                                <property name="toolTip">
+                                                    <string>While a column is the only one on its desktop, it fills the screen. It goes back to its own width as soon as another column opens.</string>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                        <item>
                                             <widget class="QCheckBox" name="kcfg_skipSwitcher">
                                                 <property name="text">
                                                     <string>Tiled windows skip switcher</string>

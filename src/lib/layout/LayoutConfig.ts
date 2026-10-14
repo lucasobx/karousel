@@ -9,6 +9,7 @@ interface LayoutConfig {
     resizeNeighborColumn: boolean;
     reMaximize: boolean;
     snapNewColumnsToPresets: boolean;
+    expandSingleColumn: boolean;
     skipSwitcher: boolean;
     tiledKeepBelow: boolean;
     maximizedKeepAbove: boolean;

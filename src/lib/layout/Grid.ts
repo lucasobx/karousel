@@ -5,6 +5,7 @@ class Grid {
     private readonly columns: LinkedList<Column>;
     private lastFocusedColumn: Column|null;
     private openedColumn: Grid.OpenedColumn|null;
+    private singleColumnExpansionSuppressed: boolean;
     private width: number;
     private userResize: boolean; // is any part of the grid being resized by the user
     private readonly userResizeFinishedDelayer: Delayer;
@@ -16,6 +17,7 @@ class Grid {
         this.columns = new LinkedList();
         this.lastFocusedColumn = null;
         this.openedColumn = null;
+        this.singleColumnExpansionSuppressed = false;
         this.width = 0;
         this.userResize = false;
         this.userResizeFinishedDelayer = new Delayer(50, () => {
@@ -57,6 +59,14 @@ class Grid {
 
     public getWidth() {
         return this.width;
+    }
+
+    public isExpandingSingleColumn() {
+        return this.config.expandSingleColumn && this.columns.length() === 1 && !this.singleColumnExpansionSuppressed;
+    }
+
+    public suppressSingleColumnExpansion() {
+        this.singleColumnExpansionSuppressed = true;
     }
 
     public isUserResizing() {
@@ -152,6 +162,7 @@ class Grid {
     }
 
     public onColumnAdded(column: Column, leftColumn: Column|null) {
+        this.singleColumnExpansionSuppressed = false;
         this.openedColumn = leftColumn !== null && leftColumn === this.getLastFocusedColumn() ? {
             column: column,
             previousColumn: leftColumn,
@@ -170,6 +181,7 @@ class Grid {
     }
 
     public onColumnRemoved(column: Column, passFocus: FocusPassing.Type) {
+        this.singleColumnExpansionSuppressed = false;
         const isLastColumn = this.columns.length() === 1;
         const rightColumn = this.getRightColumn(column);
         const columnToFocus = isLastColumn ? null : this.getLeftColumn(column) ?? rightColumn;

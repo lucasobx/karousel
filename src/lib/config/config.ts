@@ -17,6 +17,7 @@ interface Config {
     resizeNeighborColumn: boolean;
     reMaximize: boolean;
     snapNewColumnsToPresets: boolean;
+    expandSingleColumn: boolean;
     skipSwitcher: boolean;
     scrollingLazy: boolean;
     scrollingCentered: boolean;
