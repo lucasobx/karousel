@@ -82,6 +82,7 @@ class MockKwinClient {
             horizontally ? screen.width  : this.windowedFrameGeometry.width,
             vertically   ? screen.height : this.windowedFrameGeometry.height,
         );
+        (Qt as unknown as MockQt).runCalledLater();
     }
 
     public get clientGeometry() {

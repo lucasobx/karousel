@@ -10,6 +10,7 @@ interface Qt {
 
     rect(x: number, y: number, width: number, height: number): QmlRect;
     createQmlObject(qml: string, parent: QmlObject): QmlObject;
+    callLater(f: () => void): void;
 }
 
 interface QmlObject { __brand: "QmlObject" }

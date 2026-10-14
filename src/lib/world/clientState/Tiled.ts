@@ -65,7 +65,19 @@ namespace ClientState {
                 });
             });
 
+            const convertMaximize = () => {
+                const state = client.stateManager.getState();
+                if (!(state instanceof Tiled) || state.window !== window) {
+                    return;
+                }
+                client.setMaximize(false, false);
+                world.do(() => window.column.toggleFullWidth());
+            };
             manager.connect(kwinClient.maximizedAboutToChange, (maximizedMode: MaximizedMode) => {
+                if (config.fullWidthMaximize && maximizedMode === MaximizedMode.Maximized) {
+                    Qt.callLater(convertMaximize);
+                    return;
+                }
                 world.do(() => {
                     window.onMaximizedChanged(maximizedMode);
                 });

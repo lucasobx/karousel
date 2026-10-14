@@ -54,6 +54,7 @@ class World {
             stackColumnsByDefault: config.stackColumnsByDefault,
             resizeNeighborColumn: config.resizeNeighborColumn,
             reMaximize: config.reMaximize,
+            fullWidthMaximize: config.fullWidthMaximize,
             snapNewColumnsToPresets: config.snapNewColumnsToPresets,
             expandSingleColumn: config.expandSingleColumn,
             skipSwitcher: config.skipSwitcher,

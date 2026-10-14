@@ -145,6 +145,11 @@ const configDef = [
         default: false,
     },
     {
+        name: "fullWidthMaximize",
+        type: "Bool",
+        default: false,
+    },
+    {
         name: "snapNewColumnsToPresets",
         type: "Bool",
         default: false,

@@ -70,6 +70,16 @@
                                             </widget>
                                         </item>
                                         <item>
+                                            <widget class="QCheckBox" name="kcfg_fullWidthMaximize">
+                                                <property name="text">
+                                                    <string>Maximize as full-width column</string>
+                                                </property>
+                                                <property name="toolTip">
+                                                    <string>When a tiled window is maximized, by a shortcut or by the application, toggle the full width of its column instead of covering the screen</string>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                        <item>
                                             <widget class="QCheckBox" name="kcfg_snapNewColumnsToPresets">
                                                 <property name="text">
                                                     <string>Snap new columns to presets</string>

@@ -30,9 +30,7 @@ class RawResizer {
     }
 
     public maximizeWidth(column: Column) {
-        const presetWidths = this.presetWidths.getWidths(column.getMinWidth(), column.getMaxWidth(), column.grid.desktop.tilingArea.width);
-        const maxWidth = presetWidths[presetWidths.length-1];
-        column.setRelativeWidth(maxWidth);
+        column.toggleFullWidth();
     }
 
     public minimizeWidth(column: Column) {

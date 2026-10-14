@@ -2,6 +2,7 @@ class MockQt {
     public readonly __brand = "Qt";
 
     private shortcuts = new Map<string, MockShortcutHandler>();
+    private readonly calledLater: (() => void)[] = [];
 
     public point(x: number, y: number) {
         return new MockQmlPoint(x, y);
@@ -9,6 +10,16 @@ class MockQt {
 
     public rect(x: number, y: number, width: number, height: number) {
         return new MockQmlRect(x, y, width, height);
+    }
+
+    public callLater(f: () => void) {
+        this.calledLater.push(f);
+    }
+
+    public runCalledLater() {
+        for (let f = this.calledLater.shift(); f !== undefined; f = this.calledLater.shift()) {
+            f();
+        }
     }
 
     public createQmlObject(qml: string, parent: QmlObject): QmlObject {

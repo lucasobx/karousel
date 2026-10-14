@@ -8,6 +8,7 @@ interface LayoutConfig {
     stackColumnsByDefault: boolean;
     resizeNeighborColumn: boolean;
     reMaximize: boolean;
+    fullWidthMaximize: boolean;
     snapNewColumnsToPresets: boolean;
     expandSingleColumn: boolean;
     skipSwitcher: boolean;

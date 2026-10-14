@@ -7,6 +7,7 @@ class Column {
     private focusTaker: Window|null;
     private presetWidthIdx: number|null;
     private widthProportion: number|null;
+    private fullWidth: boolean;
     private static readonly minWidth = 40;
 
     constructor(grid: Grid, leftColumn: Column|null) {
@@ -17,6 +18,7 @@ class Column {
         this.focusTaker = null;
         this.presetWidthIdx = null;
         this.widthProportion = null;
+        this.fullWidth = false;
         this.grid = grid;
         this.grid.onColumnAdded(this, leftColumn);
     }
@@ -77,18 +79,38 @@ class Column {
     }
 
     public getWidth() {
-        if (this.grid.isExpandingSingleColumn()) {
+        if (this.isExpanded()) {
             return this.getMaxWidth();
         }
         return this.width;
     }
 
+    public toggleFullWidth() {
+        if (this.isExpanded()) {
+            this.stopExpanding();
+        } else {
+            this.fullWidth = true;
+        }
+        this.grid.onColumnWidthChanged(this);
+    }
+
+    private isExpanded() {
+        return this.fullWidth || this.grid.isExpandingSingleColumn();
+    }
+
+    private stopExpanding() {
+        this.fullWidth = false;
+        if (this.grid.isExpandingSingleColumn()) {
+            this.grid.suppressSingleColumnExpansion();
+        }
+    }
+
     private takeOverExpandedWidth() {
-        if (!this.grid.isExpandingSingleColumn()) {
+        if (!this.isExpanded()) {
             return;
         }
         const width = this.getWidth();
-        this.grid.suppressSingleColumnExpansion();
+        this.stopExpanding();
         this.setRelativeWidth(width);
     }
 

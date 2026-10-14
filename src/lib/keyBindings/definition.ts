@@ -168,7 +168,7 @@ function getKeyBindings(world: World, actions: Actions): KeyBinding[] {
         },
         {
             name: "column-width-maximize",
-            description: "Increase column width to maximum",
+            description: "Toggle full column width",
             action: () => world.doIfTiledFocused(actions.columnWidthMaximize),
         },
         {
