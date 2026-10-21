@@ -107,3 +107,33 @@ tests.register("User resize", 10, () => {
         assertSizes(305, 295, h, h);
     }
 });
+
+tests.register("User resize with alternating client widths", 10, () => {
+    const config = getDefaultConfig();
+    const { workspaceMock } = init(config);
+    const [clientLeft, clientRight] = workspaceMock.createClientsWithWidths(500, 500);
+    const frame = clientLeft.getFrameGeometryCopy();
+    Assert.assert(frame.x < clientRight.getActualFrameGeometry().x, { message: "invalid test setup" });
+
+    function commit(widthDelta: number) {
+        clientLeft.frameGeometry = new MockQmlRect(frame.x + 1/3, frame.y, frame.width + widthDelta, frame.height);
+    }
+
+    clientLeft.resize = true;
+    clientLeft.interactiveMoveResizeStarted.fire();
+
+    let rightX = clientRight.getActualFrameGeometry().x;
+    for (const widthDelta of [2, 12, 6, 16, 10, 20]) {
+        commit(widthDelta);
+        const newRightX = clientRight.getActualFrameGeometry().x;
+        Assert.assert(newRightX >= rightX, { message: "The neighbor column should not move back while the client's width alternates" });
+        Assert.assert(newRightX >= rectRight(frame) + widthDelta + gapH, { message: "The neighbor column should not overlap the resized window" });
+        rightX = newRightX;
+    }
+
+    commit(4);
+    commit(2);
+    clientLeft.resize = false;
+    clientLeft.interactiveMoveResizeFinished.fire();
+    Assert.equal(clientLeft.getActualFrameGeometry().width, frame.width + 2, { message: "The column should take the width the client had when the resize ended" });
+});

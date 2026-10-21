@@ -6,6 +6,7 @@ namespace ClientState {
         private static readonly maxExternalFrameGeometryChangedIntervalMs = 1000;
         private static readonly refusalIntervalMs = 10000;
         private static readonly refusalsToAdopt = 3;
+        private static readonly userResizeWidthSamples = 3;
 
         constructor(world: World, client: ClientWrapper, grid: Grid) {
             this.defaultState = { skipSwitcher: client.kwinClient.skipSwitcher };
@@ -87,9 +88,11 @@ namespace ClientState {
             let moving = false;
             let resizing = false;
             let resizeStartWidth = 0;
+            let resizeStartFrame = Qt.rect(0, 0, 0, 0);
+            let resizeLeftEdge: boolean | undefined;
+            let resizeWidths: number[] = [];
             let resizeNeighbor: { column: Column, startWidth: number } | undefined;
             let resizeStartHeight = 0;
-            let resizeStartFrameHeight = 0;
             let resizeHeightNeighbor: { window: Window, startHeight: number } | null | undefined;
             manager.connect(kwinClient.interactiveMoveResizeStarted, () => {
                 if (kwinClient.move) {
@@ -106,8 +109,10 @@ namespace ClientState {
                 if (kwinClient.resize) {
                     resizing = true;
                     resizeStartWidth = window.column.getWidth();
+                    resizeStartFrame = roundQtRect(kwinClient.frameGeometry);
+                    resizeLeftEdge = undefined;
+                    resizeWidths = [];
                     resizeStartHeight = window.height;
-                    resizeStartFrameHeight = kwinClient.frameGeometry.height.round();
                     resizeHeightNeighbor = undefined;
                     if (config.resizeNeighborColumn) {
                         const resizeNeighborColumn = Tiled.getResizeNeighborColumn(window);
@@ -129,6 +134,16 @@ namespace ClientState {
                 }
                 if (resizing) {
                     resizing = false;
+                    const leftEdge = resizeLeftEdge;
+                    const lastWidth = resizeWidths[resizeWidths.length - 1];
+                    if (leftEdge !== undefined && lastWidth !== undefined) {
+                        world.do(() => window.column.onUserResizeWidth(
+                            resizeStartWidth,
+                            lastWidth - resizeStartWidth,
+                            leftEdge,
+                            resizeNeighbor,
+                        ));
+                    }
                     resizeNeighbor = undefined;
                     resizeHeightNeighbor = undefined;
                     window.column.grid.onUserResizeFinished();
@@ -170,11 +185,22 @@ namespace ClientState {
                 if (kwinClient.resize) {
                     refusalCount = 0;
                     world.do(() => {
-                        if (newGeometry.width !== oldGeometry.width) {
+                        if (resizeLeftEdge === undefined) {
+                            const leftDelta = Math.abs(newGeometry.x - resizeStartFrame.x);
+                            const rightDelta = Math.abs(rectRight(newGeometry) - rectRight(resizeStartFrame));
+                            if (Math.max(leftDelta, rightDelta) > 1 && leftDelta !== rightDelta) {
+                                resizeLeftEdge = leftDelta > rightDelta;
+                            }
+                        }
+                        if (resizeLeftEdge !== undefined) {
+                            resizeWidths.push(newGeometry.width);
+                            if (resizeWidths.length > Tiled.userResizeWidthSamples) {
+                                resizeWidths.shift();
+                            }
                             window.column.onUserResizeWidth(
                                 resizeStartWidth,
-                                newGeometry.width - resizeStartWidth,
-                                newGeometry.x !== oldGeometry.x,
+                                Math.max(...resizeWidths) - resizeStartWidth,
+                                resizeLeftEdge,
                                 resizeNeighbor,
                             );
                         }
@@ -189,7 +215,7 @@ namespace ClientState {
                                 window.column.onUserResizeHeight(
                                     window,
                                     resizeStartHeight,
-                                    newGeometry.height - resizeStartFrameHeight,
+                                    newGeometry.height - resizeStartFrame.height,
                                     resizeHeightNeighbor,
                                 );
                             }
